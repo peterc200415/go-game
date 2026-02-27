@@ -1,6 +1,6 @@
 <template>
-  <div class="board-container">
-    <svg :viewBox="`0 0 ${svgSize} ${svgSize}`" class="board-svg">
+  <div class="board-container" :style="{ transform: `scale(${scale})`, transformOrigin: 'top left' }">
+    <svg :viewBox="`0 0 ${svgSize} ${svgSize}`" class="board-svg" :style="{ width: svgSize * scale + 'px', height: svgSize * scale + 'px' }">
       <!-- Wood background -->
       <defs>
         <radialGradient id="boardGrad" cx="50%" cy="50%" r="60%">
@@ -91,7 +91,8 @@ const props = defineProps({
   myColor: { type: String, default: 'black' },
   turn: { type: String, default: 'black' },
   lastMove: { type: Array, default: null },
-  disabled: { type: Boolean, default: false }
+  disabled: { type: Boolean, default: false },
+  scale: { type: Number, default: 1 }
 });
 
 const emit = defineEmits(['place']);
@@ -150,6 +151,7 @@ function handleClick(r, c) {
   overflow: hidden;
   box-shadow: 0 15px 40px rgba(0,0,0,0.5);
   display: inline-block;
+  transition: transform 0.2s ease;
 }
 .board-svg {
   display: block;

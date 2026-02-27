@@ -141,6 +141,11 @@
           <button v-if="!isSpectator && !gameOver" @click="resign"
             style="background: var(--accent-red)">{{ t('resign') }}</button>
           <button @click="leave">{{ t('leaveGame') }}</button>
+          <span style="margin-left: 12px; font-size: 13px">{{ t('zoom') }}:
+            <button @click="boardScale = Math.max(0.5, boardScale - 0.1)" style="padding: 2px 6px; margin: 0 4px">−</button>
+            {{ Math.round(boardScale * 100) }}%
+            <button @click="boardScale = Math.min(2, boardScale + 0.1)" style="padding: 2px 6px; margin: 0 4px">+</button>
+          </span>
         </div>
       </div>
 
@@ -150,6 +155,7 @@
         :turn="turn"
         :myColor="myColor"
         :lastMove="lastMove"
+        :scale="boardScale"
         :disabled="isSpectator || gameOver || aiThinking || turn !== myColor"
         @place="handlePlace"
         style="margin-top: 16px"
@@ -229,6 +235,7 @@ const i18n = {
     moveNum: '手數',
     boardSizeLabel: '棋盤大小',
     aiModel: 'AI 模型',
+    zoom: '縮放',
     gameEndScore: '雙方虛手，終局計分',
     resignWin: (c) => `${c}認輸`,
     scoreWin: (winner, diff) => `${winner}勝 ${diff.toFixed(1)} 目`,
@@ -278,6 +285,7 @@ const i18n = {
     moveNum: 'Move',
     boardSizeLabel: 'Board Size',
     aiModel: 'AI Model',
+    zoom: 'Zoom',
     gameEndScore: 'Both players passed. Scoring...',
     resignWin: (c) => `${c} resigned`,
     scoreWin: (winner, diff) => `${winner} wins by ${diff.toFixed(1)} points`,
@@ -306,6 +314,7 @@ const selectedModel = ref('phi4-mini:3.8b');
 
 const board = ref([]);
 const boardSize = ref(19);
+const boardScale = ref(1);
 const turn = ref('black');
 const myColor = ref('black');
 const isSinglePlayer = ref(false);
