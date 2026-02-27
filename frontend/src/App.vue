@@ -26,11 +26,26 @@
             <button :class="['size-btn', selectedSize === 19 && 'active']" @click="selectedSize = 19">19×19</button>
           </div>
           <label style="color: var(--text-secondary); font-size: 13px; text-align: center; margin-top: 8px">{{ t('aiModel') }}</label>
-          <select v-model="selectedModel" @change="onModelChange" style="padding: 6px; border-radius: 6px; background: var(--bg-dark); color: var(--text-primary); border: 1px solid var(--border-color); margin-bottom: 8px">
-            <option v-for="m in AI_MODELS" :key="m.id" :value="m.id">{{ m.name }} ({{ m.desc }})</option>
+          <select v-model="selectedModel" @change="onModelChange" style="padding: 6px; border-radius: 6px; background: #1e1e2e; color: #fff; border: 1px solid #444; margin-bottom: 8px">
+            <option v-for="m in AI_MODELS" :key="m.id" :value="m.id" style="background: #1e1e2e; color: #fff">{{ m.name }} ({{ m.desc }})</option>
           </select>
           <button @click="startSP" style="background: var(--accent-green)">{{ t('playAI') }}</button>
           <button @click="startAIAI" style="background: var(--accent-purple); margin-top: 8px">{{ t('playAIAI') }}</button>
+        </div>
+
+        <!-- AI vs AI Model Selection (Guest) -->
+        <div v-if="showAIAISelector" class="flex-col" style="margin-top: 12px; padding: 12px; background: rgba(255,255,255,0.05); border-radius: 8px">
+          <label style="color: var(--text-secondary); font-size: 13px; text-align: center">{{ t('aiVsAiModels') }}</label>
+          <div style="display: flex; gap: 8px; margin: 8px 0">
+            <select v-model="aiModelBlack" style="flex:1; padding: 6px; border-radius: 6px; background: #1e1e2e; color: #e2e8f0; border: 1px solid #444">
+              <option v-for="m in AI_MODELS" :key="m.id" :value="m.id" style="background: #1e1e2e; color: #fff">{{ m.name }}</option>
+            </select>
+            <span style="align-self: center">⚫ vs ⚪</span>
+            <select v-model="aiModelWhite" style="flex:1; padding: 6px; border-radius: 6px; background: #1e1e2e; color: #94a3b8; border: 1px solid #444">
+              <option v-for="m in AI_MODELS" :key="m.id" :value="m.id" style="background: #1e1e2e; color: #fff">{{ m.name }}</option>
+            </select>
+          </div>
+          <button @click="confirmAIAI" style="background: var(--accent-purple)">{{ t('startAIAI') }}</button>
         </div>
       </div>
 
@@ -51,8 +66,8 @@
             <button :class="['size-btn', selectedSize === 19 && 'active']" @click="selectedSize = 19">19×19</button>
           </div>
           <label style="color: var(--text-secondary); font-size: 13px; text-align: center; margin-top: 8px">{{ t('aiModel') }}</label>
-          <select v-model="selectedModel" @change="onModelChange" style="padding: 6px; border-radius: 6px; background: var(--bg-dark); color: var(--text-primary); border: 1px solid var(--border-color); margin-bottom: 8px">
-            <option v-for="m in AI_MODELS" :key="m.id" :value="m.id">{{ m.name }} ({{ m.desc }})</option>
+          <select v-model="selectedModel" @change="onModelChange" style="padding: 6px; border-radius: 6px; background: #1e1e2e; color: #fff; border: 1px solid #444; margin-bottom: 8px">
+            <option v-for="m in AI_MODELS" :key="m.id" :value="m.id" style="background: #1e1e2e; color: #fff">{{ m.name }} ({{ m.desc }})</option>
           </select>
           <button @click="startSP" style="background: var(--accent-green)">{{ t('playAI') }}</button>
           <button @click="startAIAI" style="background: var(--accent-purple); margin-top: 8px">{{ t('playAIAI') }}</button>
@@ -62,12 +77,12 @@
         <div v-if="showAIAISelector" class="flex-col" style="margin-top: 12px; padding: 12px; background: rgba(255,255,255,0.05); border-radius: 8px">
           <label style="color: var(--text-secondary); font-size: 13px; text-align: center">{{ t('aiVsAiModels') }}</label>
           <div style="display: flex; gap: 8px; margin: 8px 0">
-            <select v-model="aiModelBlack" style="flex:1; padding: 6px; border-radius: 6px; background: var(--bg-dark); color: #e2e8f0; border: 1px solid var(--border-color)">
-              <option v-for="m in AI_MODELS" :key="m.id" :value="m.id">{{ m.name }}</option>
+            <select v-model="aiModelBlack" style="flex:1; padding: 6px; border-radius: 6px; background: #1e1e2e; color: #e2e8f0; border: 1px solid #444">
+              <option v-for="m in AI_MODELS" :key="m.id" :value="m.id" style="background: #1e1e2e; color: #fff">{{ m.name }}</option>
             </select>
             <span style="align-self: center">⚫ vs ⚪</span>
-            <select v-model="aiModelWhite" style="flex:1; padding: 6px; border-radius: 6px; background: var(--bg-dark); color: #94a3b8; border: 1px solid var(--border-color)">
-              <option v-for="m in AI_MODELS" :key="m.id" :value="m.id">{{ m.name }}</option>
+            <select v-model="aiModelWhite" style="flex:1; padding: 6px; border-radius: 6px; background: #1e1e2e; color: #94a3b8; border: 1px solid #444">
+              <option v-for="m in AI_MODELS" :key="m.id" :value="m.id" style="background: #1e1e2e; color: #fff">{{ m.name }}</option>
             </select>
           </div>
           <button @click="confirmAIAI" style="background: var(--accent-purple)">{{ t('startAIAI') }}</button>
