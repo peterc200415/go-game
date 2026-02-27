@@ -295,7 +295,7 @@ const password = ref('');
 const nickname = ref('');
 const roomIdInput = ref('');
 const selectedSize = ref(19);
-const selectedModel = ref('llama3.2:3b');
+const selectedModel = ref('phi4-mini:3.8b');
 
 const board = ref([]);
 const boardSize = ref(19);
