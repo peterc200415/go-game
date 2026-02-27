@@ -6,6 +6,29 @@ import {
 
 const DIRS = [[0, 1], [0, -1], [1, 0], [-1, 0]];
 
+export const AI_MODELS = [
+    { id: 'llama3.2:3b', name: 'Llama 3.2 3B', desc: '快速,較弱' },
+    { id: 'llama3.1:8b', name: 'Llama 3.1 8B', desc: '平衡' },
+    { id: 'mistral:7b', name: 'Mistral 7B', desc: '策略較強' },
+    { id: 'qwen2.5:7b', name: 'Qwen 2.5 7B', desc: '中文較強' },
+    { id: 'Phi4', name: 'Phi-4', desc: '微軟模型' },
+    { id: 'basic', name: '基本引擎', desc: '無 LLM, 最快' }
+];
+
+let selectedModel = 'llama3.2:3b';
+
+export function setAIModel(modelId) {
+    if (modelId === 'basic') {
+        selectedModel = null;
+    } else {
+        selectedModel = modelId;
+    }
+}
+
+export function getSelectedModel() {
+    return selectedModel;
+}
+
 /**
  * Evaluate a move's strategic value (higher = better)
  */
@@ -106,10 +129,12 @@ export async function getAIMove(board, color, koHash = null) {
     const moves = generateLegalMoves(board, color, koHash);
     if (moves.length === 0) return null;
 
-    // Always compute basic AI move as fallback
     const basicMove = getBasicAIMove(board, color, koHash);
 
-    // Try Ollama for strategic advice
+    if (!selectedModel) {
+        return basicMove;
+    }
+
     try {
         const size = board.length;
         let boardStr = '';
@@ -136,7 +161,7 @@ export async function getAIMove(board, color, koHash = null) {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
-                model: 'llama3.1:8b',
+                model: selectedModel,
                 messages: [{ role: 'user', content: prompt }],
                 stream: false
             })
@@ -145,7 +170,7 @@ export async function getAIMove(board, color, koHash = null) {
         const data = await res.json();
         const reply = data.message?.content?.trim();
         if (reply) {
-            console.log('Ollama suggested:', reply);
+            console.log(`Ollama (${selectedModel}) suggested:`, reply);
             const match = reply.match(/(\d+)[^0-9]+(\d+)/);
             if (match) {
                 const ollamaMove = { row: parseInt(match[1]), col: parseInt(match[2]) };

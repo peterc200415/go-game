@@ -25,6 +25,10 @@
             <button :class="['size-btn', selectedSize === 13 && 'active']" @click="selectedSize = 13">13×13</button>
             <button :class="['size-btn', selectedSize === 19 && 'active']" @click="selectedSize = 19">19×19</button>
           </div>
+          <label style="color: var(--text-secondary); font-size: 13px; text-align: center; margin-top: 8px">{{ t('aiModel') }}</label>
+          <select v-model="selectedModel" @change="onModelChange" style="padding: 6px; border-radius: 6px; background: var(--bg-dark); color: var(--text-primary); border: 1px solid var(--border-color); margin-bottom: 8px">
+            <option v-for="m in AI_MODELS" :key="m.id" :value="m.id">{{ m.name }} ({{ m.desc }})</option>
+          </select>
           <button @click="startSP" style="background: var(--accent-green)">{{ t('playAI') }}</button>
         </div>
       </div>
@@ -45,6 +49,10 @@
             <button :class="['size-btn', selectedSize === 13 && 'active']" @click="selectedSize = 13">13×13</button>
             <button :class="['size-btn', selectedSize === 19 && 'active']" @click="selectedSize = 19">19×19</button>
           </div>
+          <label style="color: var(--text-secondary); font-size: 13px; text-align: center; margin-top: 8px">{{ t('aiModel') }}</label>
+          <select v-model="selectedModel" @change="onModelChange" style="padding: 6px; border-radius: 6px; background: var(--bg-dark); color: var(--text-primary); border: 1px solid var(--border-color); margin-bottom: 8px">
+            <option v-for="m in AI_MODELS" :key="m.id" :value="m.id">{{ m.name }} ({{ m.desc }})</option>
+          </select>
         </div>
 
         <!-- Room List -->
@@ -164,7 +172,7 @@ import {
   createBoard, placeStone, boardHash,
   calculateScore, displayToColor, colorToDisplay
 } from './engine/GoLogic.js';
-import { getAIMove } from './engine/GoAI.js';
+import { getAIMove, AI_MODELS, setAIModel, getSelectedModel } from './engine/GoAI.js';
 
 // ==================== i18n ====================
 const lang = ref('zh');
@@ -213,6 +221,7 @@ const i18n = {
     captures: '提子',
     moveNum: '手數',
     boardSizeLabel: '棋盤大小',
+    aiModel: 'AI 模型',
     gameEndScore: '雙方虛手，終局計分',
     resignWin: (c) => `${c}認輸`,
     scoreWin: (winner, diff) => `${winner}勝 ${diff.toFixed(1)} 目`,
@@ -261,6 +270,7 @@ const i18n = {
     captures: 'Captures',
     moveNum: 'Move',
     boardSizeLabel: 'Board Size',
+    aiModel: 'AI Model',
     gameEndScore: 'Both players passed. Scoring...',
     resignWin: (c) => `${c} resigned`,
     scoreWin: (winner, diff) => `${winner} wins by ${diff.toFixed(1)} points`,
@@ -285,6 +295,7 @@ const password = ref('');
 const nickname = ref('');
 const roomIdInput = ref('');
 const selectedSize = ref(19);
+const selectedModel = ref('llama3.2:3b');
 
 const board = ref([]);
 const boardSize = ref(19);
@@ -313,6 +324,10 @@ function closeVictory() {
   scoreResult.value = null;
   winMessage.value = '';
   view.value = 'lobby';
+}
+
+function onModelChange() {
+  setAIModel(selectedModel.value);
 }
 
 function resetBoard() {
