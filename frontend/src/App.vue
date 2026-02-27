@@ -119,6 +119,13 @@
             ⚫ {{ capturedByBlack }} / ⚪ {{ capturedByWhite }}
           </span>
           <span>{{ t('moveNum') }}: {{ moveCount }}</span>
+          <span>{{ t('boardSizeLabel') }}: 
+            <select v-model.number="boardSize" @change="onBoardSizeChange" :disabled="!isSinglePlayer || moveCount > 0" style="background: transparent; color: inherit; border: 1px solid var(--border-color); border-radius: 4px; padding: 2px 6px">
+              <option :value="9">9×9</option>
+              <option :value="13">13×13</option>
+              <option :value="19">19×19</option>
+            </select>
+          </span>
         </div>
 
         <div v-if="isSpectator" style="color: #6366f1; margin-top: 4px; font-size: 13px">
@@ -328,6 +335,20 @@ function closeVictory() {
 
 function onModelChange() {
   setAIModel(selectedModel.value);
+}
+
+function onBoardSizeChange() {
+  if (isSinglePlayer.value && moveCount.value === 0) {
+    board.value = createBoard(boardSize.value);
+    turn.value = 'black';
+    lastMove.value = null;
+    moveCount.value = 0;
+    capturedByBlack.value = 0;
+    capturedByWhite.value = 0;
+    consecutivePasses.value = 0;
+    prevBoardHash.value = null;
+    koHash.value = null;
+  }
 }
 
 function resetBoard() {
