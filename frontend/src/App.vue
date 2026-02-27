@@ -30,6 +30,7 @@
             <option v-for="m in AI_MODELS" :key="m.id" :value="m.id">{{ m.name }} ({{ m.desc }})</option>
           </select>
           <button @click="startSP" style="background: var(--accent-green)">{{ t('playAI') }}</button>
+          <button @click="startAIAI" style="background: var(--accent-purple); margin-top: 8px">{{ t('playAIAI') }}</button>
         </div>
       </div>
 
@@ -53,6 +54,23 @@
           <select v-model="selectedModel" @change="onModelChange" style="padding: 6px; border-radius: 6px; background: var(--bg-dark); color: var(--text-primary); border: 1px solid var(--border-color); margin-bottom: 8px">
             <option v-for="m in AI_MODELS" :key="m.id" :value="m.id">{{ m.name }} ({{ m.desc }})</option>
           </select>
+          <button @click="startSP" style="background: var(--accent-green)">{{ t('playAI') }}</button>
+          <button @click="startAIAI" style="background: var(--accent-purple); margin-top: 8px">{{ t('playAIAI') }}</button>
+        </div>
+
+        <!-- AI vs AI Model Selection -->
+        <div v-if="showAIAISelector" class="flex-col" style="margin-top: 12px; padding: 12px; background: rgba(255,255,255,0.05); border-radius: 8px">
+          <label style="color: var(--text-secondary); font-size: 13px; text-align: center">{{ t('aiVsAiModels') }}</label>
+          <div style="display: flex; gap: 8px; margin: 8px 0">
+            <select v-model="aiModelBlack" style="flex:1; padding: 6px; border-radius: 6px; background: var(--bg-dark); color: #e2e8f0; border: 1px solid var(--border-color)">
+              <option v-for="m in AI_MODELS" :key="m.id" :value="m.id">{{ m.name }}</option>
+            </select>
+            <span style="align-self: center">⚫ vs ⚪</span>
+            <select v-model="aiModelWhite" style="flex:1; padding: 6px; border-radius: 6px; background: var(--bg-dark); color: #94a3b8; border: 1px solid var(--border-color)">
+              <option v-for="m in AI_MODELS" :key="m.id" :value="m.id">{{ m.name }}</option>
+            </select>
+          </div>
+          <button @click="confirmAIAI" style="background: var(--accent-purple)">{{ t('startAIAI') }}</button>
         </div>
 
         <!-- Room List -->
@@ -104,6 +122,7 @@
     <div v-else-if="view === 'game'" class="game-view flex-col" style="align-items: center">
       <div class="game-header glass-panel" style="width: 100%">
         <h2 v-if="isSpectator">👁 {{ t('spectating') }} — {{ currentRoomId }}</h2>
+        <h2 v-else-if="isAIAI">{{ t('playAIAI') }}: {{ aiModelBlack }} ⚫ vs ⚪ {{ aiModelWhite }}</h2>
         <h2 v-else>{{ isSinglePlayer ? t('singlePlayer') : t('room') + ': ' + currentRoomId }}</h2>
 
         <div class="game-info-bar">
@@ -111,8 +130,9 @@
             <strong :style="{color: turn === 'black' ? '#e2e8f0' : '#94a3b8'}">
               {{ turn === 'black' ? '⚫' : '⚪' }} {{ colorName(turn) }}
             </strong>
+            <span v-if="isAIAI" style="font-size: 11px; margin-left: 4px">({{ turn === 'black' ? aiModelBlack : aiModelWhite }})</span>
           </span>
-          <span v-if="!isSpectator">{{ t('color') }}:
+          <span v-if="!isSpectator && !isAIAI">{{ t('color') }}:
             <strong>{{ myColor === 'black' ? '⚫' : '⚪' }} {{ colorName(myColor) }}</strong>
           </span>
           <span>{{ t('captures') }}:
@@ -120,7 +140,7 @@
           </span>
           <span>{{ t('moveNum') }}: {{ moveCount }}</span>
           <span>{{ t('boardSizeLabel') }}: 
-            <select v-model.number="boardSize" @change="onBoardSizeChange" :disabled="!isSinglePlayer || moveCount > 0" style="background: transparent; color: inherit; border: 1px solid var(--border-color); border-radius: 4px; padding: 2px 6px">
+            <select v-model.number="boardSize" @change="onBoardSizeChange" :disabled="(!isSinglePlayer && !isAIAI) || moveCount > 0" style="background: transparent; color: inherit; border: 1px solid var(--border-color); border-radius: 4px; padding: 2px 6px">
               <option :value="9">9×9</option>
               <option :value="13">13×13</option>
               <option :value="19">19×19</option>
@@ -200,6 +220,9 @@ const i18n = {
     login: '登入',
     register: '註冊',
     playAI: '單機對戰 AI',
+    playAIAI: 'AI 對戰 AI',
+    aiVsAiModels: '選擇 AI 模型 (黑棋 vs 白棋)',
+    startAIAI: '開始對戰',
     welcome: '歡迎',
     roomId: '房間 ID',
     joinRoom: '加入房間',
@@ -250,6 +273,9 @@ const i18n = {
     login: 'Login',
     register: 'Register',
     playAI: 'Play vs AI',
+    playAIAI: 'AI vs AI',
+    aiVsAiModels: 'Select AI Models (Black vs White)',
+    startAIAI: 'Start Match',
     welcome: 'Welcome',
     roomId: 'Room ID',
     joinRoom: 'Join Room',
@@ -311,6 +337,10 @@ const nickname = ref('');
 const roomIdInput = ref('');
 const selectedSize = ref(19);
 const selectedModel = ref('phi4-mini:3.8b');
+const showAIAISelector = ref(false);
+const aiModelBlack = ref('phi4-mini:3.8b');
+const aiModelWhite = ref('llama3.1:8b');
+const isAIAI = ref(false);
 
 const board = ref([]);
 const boardSize = ref(19);
@@ -347,7 +377,7 @@ function onModelChange() {
 }
 
 function onBoardSizeChange() {
-  if (isSinglePlayer.value && moveCount.value === 0) {
+  if ((isSinglePlayer.value || isAIAI.value) && moveCount.value === 0) {
     board.value = createBoard(boardSize.value);
     turn.value = 'black';
     lastMove.value = null;
@@ -526,11 +556,70 @@ function watchRoom(roomId) {
 // ==================== Game Play ====================
 function startSP() {
   isSinglePlayer.value = true;
+  isAIAI.value = false;
   isSpectator.value = false;
   currentRoomId.value = '';
   myColor.value = 'black';
   resetBoard();
   view.value = 'game';
+}
+
+function startAIAI() {
+  showAIAISelector.value = !showAIAISelector.value;
+}
+
+function confirmAIAI() {
+  isSinglePlayer.value = false;
+  isAIAI.value = true;
+  isSpectator.value = false;
+  currentRoomId.value = '';
+  myColor.value = 'black';
+  resetBoard();
+  view.value = 'game';
+  makeAIMove();
+}
+
+async function makeAIMove() {
+  if (gameOver.value || !isAIAI.value) return;
+  
+  const currentModel = turn.value === 'black' ? aiModelBlack.value : aiModelWhite.value;
+  setAIModel(currentModel);
+  
+  const aiColor = turn.value === 'black' ? 'B' : 'W';
+  
+  aiThinking.value = true;
+  setTimeout(async () => {
+    const move = await getAIMove(board.value, aiColor, koHash.value);
+    aiThinking.value = false;
+    
+    if (!move) {
+      consecutivePasses.value++;
+      turn.value = turn.value === 'black' ? 'white' : 'black';
+      moveCount.value++;
+      if (consecutivePasses.value >= 2) {
+        endGameByScore();
+        return;
+      }
+    } else {
+      const color = aiColor;
+      const result = placeStone(board.value, move.row, move.col, color, prevBoardHash.value);
+      if (result) {
+        prevBoardHash.value = boardHash(board.value);
+        board.value = result.board;
+        if (aiColor === 'B') capturedByBlack.value += result.captured;
+        else capturedByWhite.value += result.captured;
+        lastMove.value = result.lastMove;
+        koHash.value = result.koHash;
+        turn.value = turn.value === 'black' ? 'white' : 'black';
+        moveCount.value++;
+        consecutivePasses.value = 0;
+      }
+    }
+    
+    if (!gameOver.value) {
+      setTimeout(makeAIMove, 500);
+    }
+  }, 300);
 }
 
 async function handlePlace({ row, col }) {
