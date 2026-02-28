@@ -203,35 +203,60 @@ export async function getAIMove(board, color, koHash = null) {
             boardStr += `${r}: ${row}\n`;
         }
 
-        const topMoves = moves.slice(0, 30).map(m => `(${m.row},${m.col})`).join(', ');
+        const topMoves = moves.slice(0, 24).map(m => `(${m.row},${m.col})`).join(', ');
         const playerColor = color === 'B' ? 'BLACK' : 'WHITE';
         const playerSymbol = color === 'B' ? 'X' : 'O';
         const turnNumber = blackStones + whiteStones + 1;
         
-        const phase = turnNumber < 20 ? 'opening' : turnNumber < 100 ? 'middlegame' : 'endgame';
+        const phase = turnNumber <= 20 ? 'opening' : turnNumber <= 80 ? 'middlegame' : 'endgame';
 
-        const prompt = `You are a professional Go (Weiqi) player. Current game state:
+        const cornerInfo = [];
+        const corners = [
+            { name: 'top-left', coords: [[0,0], [0,1], [1,0], [1,1]] },
+            { name: 'top-right', coords: [[0,size-1], [0,size-2], [1,size-1], [1,size-2]] },
+            { name: 'bottom-left', coords: [[size-1,0], [size-2,0], [size-1,1], [size-2,1]] },
+            { name: 'bottom-right', coords: [[size-1,size-1], [size-2,size-1], [size-1,size-2], [size-2,size-2]] }
+        ];
+        corners.forEach(corner => {
+            const stones = corner.coords.map(([r,c]) => board[r]?.[c]).filter(Boolean);
+            const bCount = stones.filter(s => s === 'B').length;
+            const wCount = stones.filter(s => s === 'W').length;
+            let status = 'open';
+            if (bCount > wCount && bCount > 0) status = 'Black influence';
+            else if (wCount > bCount && wCount > 0) status = 'White influence';
+            else if (bCount === 0 && wCount === 0) status = 'empty';
+            cornerInfo.push(`${corner.name}: ${status}`);
+        });
+
+        const prompt = `You are a 3-dan amateur Go (Weiqi) player. Current game state:
 
 Board (${size}x${size}, ${phase}):
 ${boardStr}
 You are playing as ${playerColor} (${playerSymbol}).
 Total stones - Black: ${blackStones}, White: ${whiteStones}
+Corner status:
+${cornerInfo.join(', ')}
 
 Legal moves (max 30): ${topMoves}
 
 STRATEGY PRIORITIES:
-1. Capture opponent stones if possible (highest priority)
-2. If no capture, play Atari (threaten to capture)
-3. Extend your stones toward center
-4. Play on third or fourth line for territory
-5. Avoid playing on edge first line
-6. Create eyes for life
-7. Respond to opponent's threats
+${phase === 'opening' ? `OPENING FOCUS (turns 1-20):
+- First secure corners: play on 4-4 (星位) or 3-4 (小目)
+- Approach enemy corners with diagonal moves
+- Avoid playing 3-3 unless invading
+- Do NOT play on first line, prefer third/fourth line
+- Build frameworks and reduce empty corners
+- Ensure your stones have eye potential, avoid useless single stones
+` : `GENERAL FOCUS:
+- Capture opponent stones if possible (highest priority)
+- If no capture, play Atari (threaten to capture)
+- Extend your stones toward center and build territory
+- Avoid playing on first line unless endgame
+- Create eyes for life and defend weak groups
+`}
 
-Choose the BEST move from legal moves only. Output format: row,col (just two numbers, no explanation)
-Example: 3,4
-
-Output:`;
+STRICT OUTPUT RULE: only output the coordinates of your move in the format "row,col" (two integers separated by a comma). Absolutely no extra text, no explanation, no intro/outro, no Chinese characters.
+Example: 3,4`;
 
         const isProxied = !window.location.port || window.location.port === '80' || window.location.port === '443';
         const apiBase = isProxied ? '' : `http://${window.location.hostname}:3001`;
@@ -247,9 +272,9 @@ Output:`;
                 messages: [{ role: 'user', content: prompt }],
                 stream: false,
                 options: {
-                    temperature: 0.1,
-                    top_p: 0.9,
-                    num_predict: 50
+                    temperature: 0.05,
+                    top_p: 0.85,
+                    num_predict: 30
                 }
             }),
             signal: controller.signal
