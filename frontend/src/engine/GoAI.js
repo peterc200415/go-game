@@ -40,39 +40,6 @@ function countStones(board, color) {
     return count;
 }
 
-function hasTwoLiberties(board, r, c, color) {
-    const group = getGroup(board, r, c);
-    return group.liberties.size >= 2;
-}
-
-function canCapture(board, r, c, color) {
-    const opp = opponentColor(color);
-    for (const [dr, dc] of DIRS) {
-        const nr = r + dr, nc = c + dc;
-        if (nr < 0 || nr >= board.length || nc < 0 || nc >= board.length) continue;
-        if (board[nr][nc] === opp) {
-            const group = getGroup(board, nr, nc);
-            if (group.liberties.size === 1) return true;
-        }
-    }
-    return false;
-}
-
-function isEyeLike(board, r, c, color) {
-    let eyes = 0;
-    let edges = 0;
-    for (const [dr, dc] of DIRS) {
-        const nr = r + dr, nc = c + dc;
-        if (nr < 0 || nr >= board.length || nc < 0 || nc >= board.length) {
-            edges++;
-            continue;
-        }
-        if (board[nr][nc] === color) eyes++;
-        else if (board[nr][nc] === '') return false;
-    }
-    return eyes >= 3 || edges === 4;
-}
-
 function evaluateMove(board, row, col, color) {
     const size = board.length;
     const opp = opponentColor(color);
@@ -85,18 +52,19 @@ function evaluateMove(board, row, col, color) {
     const stonesAfter = countStones(result.board, color);
     const captured = stonesAfter - stonesBefore;
 
-    score += captured * 60;
+    score += captured * 100;
+
+    if (captured > 0) {
+        return score + Math.random();
+    }
 
     const group = getGroup(result.board, row, col);
     
-    if (captured >= 2) score += captured * 20;
-
-    if (group.liberties.size === 1 && captured === 0) {
-        score -= 30;
-    } else if (group.liberties.size === 2) {
-        score -= 5;
-    } else if (group.liberties.size >= 5) {
-        score += 10;
+    if (group.liberties.size <= 1) {
+        return -1000 + Math.random();
+    }
+    if (group.liberties.size === 2) {
+        score -= 20;
     }
 
     for (const [dr, dc] of DIRS) {
@@ -105,30 +73,40 @@ function evaluateMove(board, row, col, color) {
         
         if (result.board[nr][nc] === opp) {
             const oppGroup = getGroup(result.board, nr, nc);
-            if (oppGroup.liberties.size === 1) score += 25;
-            else if (oppGroup.liberties.size === 2) score += 8;
+            if (oppGroup.liberties.size === 1) {
+                score += 80;
+            } else if (oppGroup.liberties.size === 2) {
+                score += 20;
+            }
         }
         
         if (board[nr][nc] === color) {
             const beforeGroup = getGroup(board, nr, nc);
             if (beforeGroup.liberties.size === 1) {
                 const afterGroup = getGroup(result.board, nr, nc);
-                if (afterGroup.liberties.size > 1) score += 35;
+                if (afterGroup.liberties.size > 1) {
+                    score += 60;
+                }
+            } else {
+                score += 5;
             }
         }
     }
 
-    let ownAdj = 0, oppAdj = 0, emptyAdj = 0;
+    let ownStones = 0;
+    let oppStones = 0;
+    let empty = 0;
     for (const [dr, dc] of DIRS) {
         const nr = row + dr, nc = col + dc;
         if (nr < 0 || nr >= size || nc < 0 || nc >= size) continue;
-        if (board[nr][nc] === color) ownAdj++;
-        else if (board[nr][nc] === opp) oppAdj++;
-        else emptyAdj++;
+        if (board[nr][nc] === color) ownStones++;
+        else if (board[nr][nc] === opp) oppStones++;
+        else empty++;
     }
 
-    if (ownAdj >= 2) score += ownAdj * 3;
-    if (oppAdj >= 2) score += oppAdj * 4;
+    score += ownStones * 10;
+    score += oppStones * 8;
+    score += empty * 2;
 
     let diagOwn = 0;
     for (const [dr, dc] of DIAG_DIRS) {
@@ -137,49 +115,34 @@ function evaluateMove(board, row, col, color) {
             diagOwn++;
         }
     }
-    if (diagOwn >= 2) score += diagOwn * 2;
+    score += diagOwn * 5;
 
     const edgeDist = Math.min(row, col, size - 1 - row, size - 1 - col);
-    if (edgeDist === 0) score -= 15;
-    else if (edgeDist === 1) score -= 5;
-    else if (edgeDist === 2) score += 5;
-    else if (edgeDist === 3) score += 8;
-
-    const center = (size - 1) / 2;
-    const distFromCenter = Math.abs(row - center) + Math.abs(col - center);
-    
     const totalStones = countStones(board, 'B') + countStones(board, 'W');
-    const isOpening = totalStones < 10;
-    const isEndgame = totalStones > size * size * 0.5;
-
-    if (isOpening) {
-        if (distFromCenter <= 4) score += 12 - distFromCenter * 2;
-    } else if (isEndgame) {
-        if (edgeDist >= 2) score += 10;
-    } else {
-        if (edgeDist >= 2 && edgeDist <= 4) score += 5;
-    }
-
-    if (isEyeLike(board, row, col, color)) score += 15;
-
-    const cornerStarPoints = [[0,0], [0,size-1], [size-1,0], [size-1,size-1]];
-    for (const [cr, cc] of cornerStarPoints) {
-        if (Math.abs(row - cr) <= 1 && Math.abs(col - cc) <= 1) {
-            score += 8;
+    
+    if (totalStones < 20) {
+        if (edgeDist === 0) score += 15;
+        else if (edgeDist === 1) score += 20;
+        else if (edgeDist === 2) score += 10;
+        
+        const starPoints19 = [[3,3],[3,9],[3,15],[9,3],[9,9],[9,15],[15,3],[15,9],[15,15]];
+        const starPoints13 = [[3,3],[3,9],[6,6],[9,3],[9,9]];
+        const starPoints9 = [[2,2],[2,6],[4,4],[6,2],[6,6]];
+        const starPoints = size === 19 ? starPoints19 : size === 13 ? starPoints13 : starPoints9;
+        
+        for (const [sr, sc] of starPoints) {
+            if (row === sr && col === sc) score += 25;
         }
+    } else {
+        if (edgeDist >= 2) score += 8;
+        const center = (size - 1) / 2;
+        const distCenter = Math.abs(row - center) + Math.abs(col - center);
+        if (distCenter < 6) score += (6 - distCenter);
     }
 
-    const starPoints19 = [[3,3],[3,9],[3,15],[9,3],[9,9],[9,15],[15,3],[15,9],[15,15]];
-    const starPoints13 = [[3,3],[3,9],[6,6],[9,3],[9,9]];
-    const starPoints9 = [[2,2],[2,6],[4,4],[6,2],[6,6]];
-    const starPoints = size === 19 ? starPoints19 : size === 13 ? starPoints13 : starPoints9;
-    for (const [sr, sc] of starPoints) {
-        if (row === sr && col === sc) score += 10;
-    }
+    if (group.liberties.size >= 3) score += group.liberties.size * 3;
 
-    score += group.liberties.size * 3;
-
-    return score;
+    return score + Math.random() * 2;
 }
 
 /**
