@@ -379,7 +379,7 @@ const moveCount = ref(0);
 const capturedByBlack = ref(0);
 const capturedByWhite = ref(0);
 const consecutivePasses = ref(0);
-const prevBoardHash = ref(null);
+const koHash = ref(null);
 const koHash = ref(null);
 
 function closeVictory() {
@@ -402,7 +402,7 @@ function onBoardSizeChange() {
     capturedByBlack.value = 0;
     capturedByWhite.value = 0;
     consecutivePasses.value = 0;
-    prevBoardHash.value = null;
+    koHash.value = null;
     koHash.value = null;
   }
 }
@@ -416,7 +416,7 @@ function resetBoard() {
   capturedByBlack.value = 0;
   capturedByWhite.value = 0;
   consecutivePasses.value = 0;
-  prevBoardHash.value = null;
+  koHash.value = null;
   koHash.value = null;
   gameOver.value = false;
   scoreResult.value = null;
@@ -477,9 +477,8 @@ function initSocket() {
     }
 
     const color = displayToColor(move.color);
-    const result = placeStone(board.value, move.row, move.col, color, prevBoardHash.value);
+    const result = placeStone(board.value, move.row, move.col, color, koHash.value);
     if (result) {
-      prevBoardHash.value = boardHash(board.value);
       board.value = result.board;
       if (move.color === 'black') capturedByBlack.value += result.captured;
       else capturedByWhite.value += result.captured;
@@ -516,9 +515,8 @@ function initSocket() {
         continue;
       }
       const color = displayToColor(move.color);
-      const result = placeStone(board.value, move.row, move.col, color, prevBoardHash.value);
+      const result = placeStone(board.value, move.row, move.col, color, koHash.value);
       if (result) {
-        prevBoardHash.value = boardHash(board.value);
         board.value = result.board;
         lastMove.value = result.lastMove;
         koHash.value = result.koHash;
@@ -619,10 +617,9 @@ async function makeAIMove() {
       }
     } else {
       const color = aiColor;
-      const result = placeStone(board.value, move.row, move.col, color, prevBoardHash.value);
+      const result = placeStone(board.value, move.row, move.col, color, koHash.value);
       if (result) {
         board.value = result.board;
-        prevBoardHash.value = boardHash(result.board);
         if (aiColor === 'B') capturedByBlack.value += result.captured;
         else capturedByWhite.value += result.captured;
         lastMove.value = result.lastMove;
@@ -644,14 +641,10 @@ async function handlePlace({ row, col }) {
   if (turn.value !== myColor.value) return;
 
   const color = displayToColor(myColor.value);
-  const result = placeStone(board.value, row, col, color, prevBoardHash.value);
+  const result = placeStone(board.value, row, col, color, koHash.value);
   if (!result) return;
 
-  // Check ko
-  if (koHash.value && boardHash(result.board) === koHash.value) return;
-
   board.value = result.board;
-  prevBoardHash.value = boardHash(result.board);
   if (myColor.value === 'black') capturedByBlack.value += result.captured;
   else capturedByWhite.value += result.captured;
   lastMove.value = result.lastMove;
@@ -683,10 +676,9 @@ async function handlePlace({ row, col }) {
         return;
       }
 
-      const aiResult = placeStone(board.value, aiMove.row, aiMove.col, aiColor, prevBoardHash.value);
+      const aiResult = placeStone(board.value, aiMove.row, aiMove.col, aiColor, koHash.value);
       if (aiResult) {
         board.value = aiResult.board;
-        prevBoardHash.value = boardHash(aiResult.board);
         if (aiDisplayColor === 'black') capturedByBlack.value += aiResult.captured;
         else capturedByWhite.value += aiResult.captured;
         lastMove.value = aiResult.lastMove;
@@ -742,10 +734,9 @@ function pass() {
         return;
       }
 
-      const aiResult = placeStone(board.value, aiMove.row, aiMove.col, aiColor, prevBoardHash.value);
+      const aiResult = placeStone(board.value, aiMove.row, aiMove.col, aiColor, koHash.value);
       if (aiResult) {
         board.value = aiResult.board;
-        prevBoardHash.value = boardHash(aiResult.board);
         if (aiDisplayColor === 'black') capturedByBlack.value += aiResult.captured;
         else capturedByWhite.value += aiResult.captured;
         lastMove.value = aiResult.lastMove;

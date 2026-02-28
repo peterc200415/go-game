@@ -138,28 +138,28 @@ export function isValidMove(board, r, c, color, koHash = null) {
  * Place a stone on the board. Returns the new game state.
  * @returns {{ board, captured, koHash, lastMove }} or null if invalid
  */
-export function placeStone(board, r, c, color, prevBoardHash = null) {
+export function placeStone(board, r, c, color, koHash = null) {
     const result = tryPlaceStone(board, r, c, color);
     if (!result) return null;
 
-    // Ko check: the new board must not match the previous board state
+    // Ko check: the new board must not match the ko-forbidden state
     const newHash = boardHash(result.board);
-    if (prevBoardHash && newHash === prevBoardHash) return null;
+    if (koHash && newHash === koHash) return null;
 
     // Determine new ko hash (only if exactly 1 stone was captured and 
     // the placed stone has exactly 1 liberty — simple ko)
-    let koHash = null;
+    let newKoHash = null;
     if (result.captured === 1) {
         const placedGroup = getGroup(result.board, r, c);
         if (placedGroup.stones.size === 1 && placedGroup.liberties.size === 1) {
-            koHash = boardHash(board); // The previous state is now ko-forbidden
+            newKoHash = boardHash(board); // The previous state is now ko-forbidden
         }
     }
 
     return {
         board: result.board,
         captured: result.captured,
-        koHash,
+        koHash: newKoHash,
         lastMove: [r, c],
         capturedStones: result.capturedStones
     };
