@@ -5,6 +5,7 @@ import {
 } from './GoLogic.js';
 
 const DIRS = [[0, 1], [0, -1], [1, 0], [-1, 0]];
+const DIAG_DIRS = [[1, 1], [1, -1], [-1, 1], [-1, -1]];
 
 export const AI_MODELS = [
     { id: 'llama3.2:3b', name: 'Llama 3.2 3B', desc: '快速,較弱' },
@@ -29,45 +30,94 @@ export function getSelectedModel() {
     return selectedModel;
 }
 
-/**
- * Evaluate a move's strategic value (higher = better)
- */
+function countStones(board, color) {
+    let count = 0;
+    for (let r = 0; r < board.length; r++) {
+        for (let c = 0; c < board.length; c++) {
+            if (board[r][c] === color) count++;
+        }
+    }
+    return count;
+}
+
+function hasTwoLiberties(board, r, c, color) {
+    const group = getGroup(board, r, c);
+    return group.liberties.size >= 2;
+}
+
+function canCapture(board, r, c, color) {
+    const opp = opponentColor(color);
+    for (const [dr, dc] of DIRS) {
+        const nr = r + dr, nc = c + dc;
+        if (nr < 0 || nr >= board.length || nc < 0 || nc >= board.length) continue;
+        if (board[nr][nc] === opp) {
+            const group = getGroup(board, nr, nc);
+            if (group.liberties.size === 1) return true;
+        }
+    }
+    return false;
+}
+
+function isEyeLike(board, r, c, color) {
+    let eyes = 0;
+    let edges = 0;
+    for (const [dr, dc] of DIRS) {
+        const nr = r + dr, nc = c + dc;
+        if (nr < 0 || nr >= board.length || nc < 0 || nc >= board.length) {
+            edges++;
+            continue;
+        }
+        if (board[nr][nc] === color) eyes++;
+        else if (board[nr][nc] === '') return false;
+    }
+    return eyes >= 3 || edges === 4;
+}
+
 function evaluateMove(board, row, col, color) {
     const size = board.length;
     const opp = opponentColor(color);
     let score = 0;
 
-    // 1. Capture bonus — strongly prefer moves that capture
     const result = tryPlaceStone(board, row, col, color);
     if (!result) return -Infinity;
-    score += result.captured * 50;
 
-    // 2. Atari threat — putting opponent groups in atari (1 liberty)
-    for (const [dr, dc] of DIRS) {
-        const nr = row + dr, nc = col + dc;
-        if (nr < 0 || nr >= size || nc < 0 || nc >= size) continue;
-        if (result.board[nr][nc] === opp) {
-            const group = getGroup(result.board, nr, nc);
-            if (group.liberties.size === 1) score += 20;
-            else if (group.liberties.size === 2) score += 5;
-        }
+    const stonesBefore = countStones(board, color);
+    const stonesAfter = countStones(result.board, color);
+    const captured = stonesAfter - stonesBefore;
+
+    score += captured * 60;
+
+    const group = getGroup(result.board, row, col);
+    
+    if (captured >= 2) score += captured * 20;
+
+    if (group.liberties.size === 1 && captured === 0) {
+        score -= 30;
+    } else if (group.liberties.size === 2) {
+        score -= 5;
+    } else if (group.liberties.size >= 5) {
+        score += 10;
     }
 
-    // 3. Self-defense — save own groups in atari
     for (const [dr, dc] of DIRS) {
         const nr = row + dr, nc = col + dc;
         if (nr < 0 || nr >= size || nc < 0 || nc >= size) continue;
+        
+        if (result.board[nr][nc] === opp) {
+            const oppGroup = getGroup(result.board, nr, nc);
+            if (oppGroup.liberties.size === 1) score += 25;
+            else if (oppGroup.liberties.size === 2) score += 8;
+        }
+        
         if (board[nr][nc] === color) {
-            const groupBefore = getGroup(board, nr, nc);
-            if (groupBefore.liberties.size === 1) {
-                // This placement might save the group
-                const groupAfter = getGroup(result.board, nr, nc);
-                if (groupAfter.liberties.size > 1) score += 30;
+            const beforeGroup = getGroup(board, nr, nc);
+            if (beforeGroup.liberties.size === 1) {
+                const afterGroup = getGroup(result.board, nr, nc);
+                if (afterGroup.liberties.size > 1) score += 35;
             }
         }
     }
 
-    // 4. Connectivity — prefer moves adjacent to own stones
     let ownAdj = 0, oppAdj = 0, emptyAdj = 0;
     for (const [dr, dc] of DIRS) {
         const nr = row + dr, nc = col + dc;
@@ -76,27 +126,58 @@ function evaluateMove(board, row, col, color) {
         else if (board[nr][nc] === opp) oppAdj++;
         else emptyAdj++;
     }
-    score += ownAdj * 2 + emptyAdj * 1;
 
-    // 5. Position bonus — prefer third/fourth line, avoid first line
-    const distFromEdge = Math.min(row, col, size - 1 - row, size - 1 - col);
-    if (distFromEdge === 0) score -= 8;
-    else if (distFromEdge === 1) score -= 3;
-    else if (distFromEdge === 2) score += 3;
-    else if (distFromEdge === 3) score += 5;
-    else if (distFromEdge === 4) score += 4;
+    if (ownAdj >= 2) score += ownAdj * 3;
+    if (oppAdj >= 2) score += oppAdj * 4;
 
-    // 6. Center bonus (for opening)
+    let diagOwn = 0;
+    for (const [dr, dc] of DIAG_DIRS) {
+        const nr = row + dr, nc = col + dc;
+        if (nr >= 0 && nr < size && nc >= 0 && nc < size && board[nr][nc] === color) {
+            diagOwn++;
+        }
+    }
+    if (diagOwn >= 2) score += diagOwn * 2;
+
+    const edgeDist = Math.min(row, col, size - 1 - row, size - 1 - col);
+    if (edgeDist === 0) score -= 15;
+    else if (edgeDist === 1) score -= 5;
+    else if (edgeDist === 2) score += 5;
+    else if (edgeDist === 3) score += 8;
+
     const center = (size - 1) / 2;
     const distFromCenter = Math.abs(row - center) + Math.abs(col - center);
-    score += Math.max(0, 5 - distFromCenter * 0.3);
+    
+    const totalStones = countStones(board, 'B') + countStones(board, 'W');
+    const isOpening = totalStones < 10;
+    const isEndgame = totalStones > size * size * 0.5;
 
-    // 7. Liberty count of the placed stone
-    const placedGroup = getGroup(result.board, row, col);
-    score += placedGroup.liberties.size * 2;
+    if (isOpening) {
+        if (distFromCenter <= 4) score += 12 - distFromCenter * 2;
+    } else if (isEndgame) {
+        if (edgeDist >= 2) score += 10;
+    } else {
+        if (edgeDist >= 2 && edgeDist <= 4) score += 5;
+    }
 
-    // 8. Add small random factor to avoid predictability
-    score += Math.random() * 3;
+    if (isEyeLike(board, row, col, color)) score += 15;
+
+    const cornerStarPoints = [[0,0], [0,size-1], [size-1,0], [size-1,size-1]];
+    for (const [cr, cc] of cornerStarPoints) {
+        if (Math.abs(row - cr) <= 1 && Math.abs(col - cc) <= 1) {
+            score += 8;
+        }
+    }
+
+    const starPoints19 = [[3,3],[3,9],[3,15],[9,3],[9,9],[9,15],[15,3],[15,9],[15,15]];
+    const starPoints13 = [[3,3],[3,9],[6,6],[9,3],[9,9]];
+    const starPoints9 = [[2,2],[2,6],[4,4],[6,2],[6,6]];
+    const starPoints = size === 19 ? starPoints19 : size === 13 ? starPoints13 : starPoints9;
+    for (const [sr, sc] of starPoints) {
+        if (row === sr && col === sc) score += 10;
+    }
+
+    score += group.liberties.size * 3;
 
     return score;
 }
