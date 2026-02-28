@@ -569,6 +569,7 @@ function watchRoom(roomId) {
 
 // ==================== Game Play ====================
 function startSP() {
+  if (!user.value) { alert(t('needLogin')); return; }
   isSinglePlayer.value = true;
   isAIAI.value = false;
   isSpectator.value = false;
@@ -579,10 +580,12 @@ function startSP() {
 }
 
 function startAIAI() {
+  if (!user.value) { alert(t('needLogin')); return; }
   showAIAISelector.value = !showAIAISelector.value;
 }
 
 function confirmAIAI() {
+  if (!user.value) { alert(t('needLogin')); return; }
   isSinglePlayer.value = false;
   isAIAI.value = true;
   isSpectator.value = false;
