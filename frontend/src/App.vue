@@ -167,13 +167,14 @@
           {{ t('spectatorHint') }}
         </div>
 
-        <div class="game-actions" style="display: flex; flex-wrap: wrap; gap: 8px; align-items: center">
+        <div class="game-actions">
           <button v-if="!isSpectator && !gameOver" @click="pass"
             style="background: var(--accent-amber)">{{ t('pass') }}</button>
           <button v-if="!isSpectator && !gameOver" @click="resign"
             style="background: var(--accent-red)">{{ t('resign') }}</button>
           <button @click="leave">{{ t('leaveGame') }}</button>
-          <span style="font-size: 13px; margin-left: auto">
+          <span style="flex: 1"></span>
+          <span style="font-size: 13px">
             <span v-if="aiThinking" style="color: var(--accent-amber); margin-right: 12px">
               🤔 {{ t('aiThinking') }}
             </span>
