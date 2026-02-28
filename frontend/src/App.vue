@@ -621,8 +621,8 @@ async function makeAIMove() {
       const color = aiColor;
       const result = placeStone(board.value, move.row, move.col, color, prevBoardHash.value);
       if (result) {
-        prevBoardHash.value = boardHash(board.value);
         board.value = result.board;
+        prevBoardHash.value = boardHash(result.board);
         if (aiColor === 'B') capturedByBlack.value += result.captured;
         else capturedByWhite.value += result.captured;
         lastMove.value = result.lastMove;
@@ -650,8 +650,8 @@ async function handlePlace({ row, col }) {
   // Check ko
   if (koHash.value && boardHash(result.board) === koHash.value) return;
 
-  prevBoardHash.value = boardHash(board.value);
   board.value = result.board;
+  prevBoardHash.value = boardHash(result.board);
   if (myColor.value === 'black') capturedByBlack.value += result.captured;
   else capturedByWhite.value += result.captured;
   lastMove.value = result.lastMove;
@@ -685,8 +685,8 @@ async function handlePlace({ row, col }) {
 
       const aiResult = placeStone(board.value, aiMove.row, aiMove.col, aiColor, prevBoardHash.value);
       if (aiResult) {
-        prevBoardHash.value = boardHash(board.value);
         board.value = aiResult.board;
+        prevBoardHash.value = boardHash(aiResult.board);
         if (aiDisplayColor === 'black') capturedByBlack.value += aiResult.captured;
         else capturedByWhite.value += aiResult.captured;
         lastMove.value = aiResult.lastMove;
@@ -744,8 +744,8 @@ function pass() {
 
       const aiResult = placeStone(board.value, aiMove.row, aiMove.col, aiColor, prevBoardHash.value);
       if (aiResult) {
-        prevBoardHash.value = boardHash(board.value);
         board.value = aiResult.board;
+        prevBoardHash.value = boardHash(aiResult.board);
         if (aiDisplayColor === 'black') capturedByBlack.value += aiResult.captured;
         else capturedByWhite.value += aiResult.captured;
         lastMove.value = aiResult.lastMove;
