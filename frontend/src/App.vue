@@ -380,7 +380,6 @@ const capturedByBlack = ref(0);
 const capturedByWhite = ref(0);
 const consecutivePasses = ref(0);
 const koHash = ref(null);
-const koHash = ref(null);
 
 function closeVictory() {
   gameOver.value = false;
