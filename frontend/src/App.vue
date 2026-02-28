@@ -173,12 +173,12 @@
           <button v-if="!isSpectator && !gameOver" @click="resign"
             style="background: var(--accent-red)">{{ t('resign') }}</button>
           <button @click="leave">{{ t('leaveGame') }}</button>
-          <span style="flex: 1"></span>
-          <span style="font-size: 13px">
-            <span v-if="aiThinking" style="color: var(--accent-amber); margin-right: 12px">
+          <span style="display: inline-block; width: 140px; text-align: right; font-size: 13px">
+            <span v-if="aiThinking" style="color: var(--accent-amber)">
               🤔 {{ t('aiThinking') }}
             </span>
-            {{ t('zoom') }}:
+          </span>
+          <span style="font-size: 13px">{{ t('zoom') }}:
             <button @click="boardScale = Math.max(0.5, boardScale - 0.1)" style="padding: 2px 6px; margin: 0 4px">−</button>
             {{ Math.round(boardScale * 100) }}%
             <button @click="boardScale = Math.min(2, boardScale + 0.1)" style="padding: 2px 6px; margin: 0 4px">+</button>
