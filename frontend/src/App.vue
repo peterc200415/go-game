@@ -167,21 +167,20 @@
           {{ t('spectatorHint') }}
         </div>
 
-        <div class="game-actions">
+        <div class="game-actions" style="display: flex; flex-wrap: wrap; gap: 8px; align-items: center">
           <button v-if="!isSpectator && !gameOver" @click="pass"
             style="background: var(--accent-amber)">{{ t('pass') }}</button>
           <button v-if="!isSpectator && !gameOver" @click="resign"
             style="background: var(--accent-red)">{{ t('resign') }}</button>
           <button @click="leave">{{ t('leaveGame') }}</button>
-          <span style="display: flex; align-items: center; gap: 8px; min-width: 200px">
-            <span v-if="aiThinking" style="color: var(--accent-amber); font-size: 13px; white-space: nowrap">
+          <span style="font-size: 13px; margin-left: auto">
+            <span v-if="aiThinking" style="color: var(--accent-amber); margin-right: 12px">
               🤔 {{ t('aiThinking') }}
             </span>
-            <span style="font-size: 13px">{{ t('zoom') }}:
-              <button @click="boardScale = Math.max(0.5, boardScale - 0.1)" style="padding: 2px 6px; margin: 0 4px">−</button>
-              {{ Math.round(boardScale * 100) }}%
-              <button @click="boardScale = Math.min(2, boardScale + 0.1)" style="padding: 2px 6px; margin: 0 4px">+</button>
-            </span>
+            {{ t('zoom') }}:
+            <button @click="boardScale = Math.max(0.5, boardScale - 0.1)" style="padding: 2px 6px; margin: 0 4px">−</button>
+            {{ Math.round(boardScale * 100) }}%
+            <button @click="boardScale = Math.min(2, boardScale + 0.1)" style="padding: 2px 6px; margin: 0 4px">+</button>
           </span>
         </div>
       </div>
