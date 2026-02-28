@@ -242,8 +242,37 @@ input::placeholder { color: var(--text-muted); }
 }
 
 /* ============ Responsive ============ */
-@media (max-width: 500px) {
-  .lobby { margin: 30px auto; padding: 20px; }
+@media (max-width: 900px) {
+  body { padding: 16px; }
+  .glass-panel { padding: 22px; }
+  .game-info-bar { gap: 14px; font-size: 13px; }
+  .game-actions { flex-wrap: wrap; }
+  .game-actions button { flex: 1 1 calc(50% - 10px); min-width: 120px; }
+  button { font-size: 14px; }
+}
+
+@media (max-width: 640px) {
+  body { padding: 12px; }
+  .glass-panel { padding: 18px; border-radius: 14px; }
+  .lobby { margin: 30px auto; padding: 0; }
   .lobby h1 { font-size: 22px; }
-  body { padding: 10px; }
+  .game-header h2 { font-size: 18px; }
+  .game-info-bar { flex-direction: column; align-items: flex-start; gap: 8px; }
+  .game-actions { flex-direction: column; align-items: stretch; }
+  .game-actions button { width: 100%; }
+  .size-selector { flex-wrap: wrap; }
+  .room-card-players { flex-wrap: wrap; }
+  .lang-toggle { top: 10px; right: 10px; width: 38px; height: 38px; font-size: 14px; }
+}
+
+@media (max-width: 420px) {
+  body { padding: 8px; }
+  #app { max-width: 100%; }
+  .glass-panel { padding: 14px; }
+  button { font-size: 13px; padding: 9px 16px; }
+  input { font-size: 14px; }
+  .game-info-bar { font-size: 12px; }
+  .victory-modal { padding: 28px 24px; }
+  .victory-title { font-size: 26px; }
+  .victory-btn { width: 100%; }
 }
