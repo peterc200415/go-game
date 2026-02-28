@@ -181,25 +181,63 @@ export async function getAIMove(board, color, koHash = null) {
 
     try {
         const size = board.length;
+        const oppColor = color === 'B' ? 'W' : 'B';
+        
         let boardStr = '';
+        let blackStones = 0;
+        let whiteStones = 0;
+        
         for (let r = 0; r < size; r++) {
+            let row = '';
             for (let c = 0; c < size; c++) {
-                if (board[r][c]) boardStr += `[${r},${c}]=${board[r][c] === 'B' ? 'Black' : 'White'} `;
+                if (board[r][c] === 'B') {
+                    row += 'X ';
+                    blackStones++;
+                } else if (board[r][c] === 'W') {
+                    row += 'O ';
+                    whiteStones++;
+                } else {
+                    row += '. ';
+                }
             }
-            boardStr += '\n';
+            boardStr += `${r}: ${row}\n`;
         }
 
-        const topMoves = moves.slice(0, 40).map(m => `(${m.row},${m.col})`).join(' ');
-        const colorName = color === 'B' ? 'Black' : 'White';
+        const topMoves = moves.slice(0, 30).map(m => `(${m.row},${m.col})`).join(', ');
+        const playerColor = color === 'B' ? 'BLACK' : 'WHITE';
+        const playerSymbol = color === 'B' ? 'X' : 'O';
+        const turnNumber = blackStones + whiteStones + 1;
+        
+        const phase = turnNumber < 20 ? 'opening' : turnNumber < 100 ? 'middlegame' : 'endgame';
 
-        const prompt = `You are a strong Go (Weiqi) engine playing as ${colorName} on a ${size}x${size} board.\n` +
-            `Board state (row,col):\n${boardStr}\n` +
-            `Some legal moves: ${topMoves}\n\n` +
-            `Pick the BEST strategic move. Consider territory, influence, and capturing.\n` +
-            `Output ONLY two numbers: row,col\nExample: 3,4\nDo not explain.`;
+        const prompt = `You are a professional Go (Weiqi) player. Current game state:
+
+Board (${size}x${size}, ${phase}):
+${boardStr}
+You are playing as ${playerColor} (${playerSymbol}).
+Total stones - Black: ${blackStones}, White: ${whiteStones}
+
+Legal moves (max 30): ${topMoves}
+
+STRATEGY PRIORITIES:
+1. Capture opponent stones if possible (highest priority)
+2. If no capture, play Atari (threaten to capture)
+3. Extend your stones toward center
+4. Play on third or fourth line for territory
+5. Avoid playing on edge first line
+6. Create eyes for life
+7. Respond to opponent's threats
+
+Choose the BEST move from legal moves only. Output format: row,col (just two numbers, no explanation)
+Example: 3,4
+
+Output:`;
 
         const isProxied = !window.location.port || window.location.port === '80' || window.location.port === '443';
         const apiBase = isProxied ? '' : `http://${window.location.hostname}:3001`;
+
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 8000);
 
         const res = await fetch(`${apiBase}/api/ai_move`, {
             method: 'POST',
@@ -207,27 +245,42 @@ export async function getAIMove(board, color, koHash = null) {
             body: JSON.stringify({
                 model: selectedModel,
                 messages: [{ role: 'user', content: prompt }],
-                stream: false
-            })
+                stream: false,
+                options: {
+                    temperature: 0.1,
+                    top_p: 0.9,
+                    num_predict: 50
+                }
+            }),
+            signal: controller.signal
         });
+
+        clearTimeout(timeoutId);
 
         const data = await res.json();
         const reply = data.message?.content?.trim();
+        
         if (reply) {
-            console.log(`Ollama (${selectedModel}) suggested:`, reply);
-            const match = reply.match(/(\d+)[^0-9]+(\d+)/);
+            console.log(`Ollama (${selectedModel}) said:`, reply);
+            const match = reply.match(/(\d+)[,\s]+(\d+)/);
             if (match) {
-                const ollamaMove = { row: parseInt(match[1]), col: parseInt(match[2]) };
-                const isLegal = moves.some(m => m.row === ollamaMove.row && m.col === ollamaMove.col);
-                if (isLegal) {
-                    console.log('Using Ollama move');
+                const row = parseInt(match[1]);
+                const col = parseInt(match[2]);
+                const ollamaMove = { row, col };
+                const isLegal = moves.some(m => m.row === row && m.col === col);
+                if (isLegal && row >= 0 && row < size && col >= 0 && col < size) {
+                    console.log('Using Ollama move:', ollamaMove);
                     return ollamaMove;
                 }
-                console.warn('Ollama move was illegal, using basic AI');
+                console.warn('Ollama move not legal, using basic AI');
             }
         }
     } catch (err) {
-        console.warn('Ollama unavailable, using basic AI:', err.message);
+        if (err.name === 'AbortError') {
+            console.warn('Ollama timeout, using basic AI');
+        } else {
+            console.warn('Ollama error:', err.message);
+        }
     }
 
     return basicMove;
