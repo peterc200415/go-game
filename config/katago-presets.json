@@ -1,0 +1,81 @@
+{
+  "recommended_host": "10.10.10.183",
+  "hardware_profile": {
+    "cpu": "6 vCPU Xeon E5-2690 v2",
+    "gpu": "none",
+    "ram_gib": 11,
+    "notes": "CPU-only KataGo profile for this host"
+  },
+  "defaults": {
+    "mode": "time_and_visits_cap",
+    "policy": "prefer_time_cap_first",
+    "fallback_engine": "basic"
+  },
+  "board_sizes": {
+    "9": {
+      "hard": {
+        "time_per_move_sec": 0.5,
+        "max_visits": 100
+      },
+      "expert": {
+        "time_per_move_sec": 1.0,
+        "max_visits": 200
+      },
+      "recommended_range": {
+        "time_per_move_sec": [
+          0.4,
+          1.0
+        ],
+        "max_visits": [
+          80,
+          250
+        ]
+      }
+    },
+    "13": {
+      "hard": {
+        "time_per_move_sec": 1.0,
+        "max_visits": 150
+      },
+      "expert": {
+        "time_per_move_sec": 2.0,
+        "max_visits": 250
+      },
+      "recommended_range": {
+        "time_per_move_sec": [
+          0.8,
+          2.0
+        ],
+        "max_visits": [
+          120,
+          350
+        ]
+      }
+    },
+    "19": {
+      "hard": {
+        "time_per_move_sec": 2.5,
+        "max_visits": 200
+      },
+      "expert": {
+        "time_per_move_sec": 4.0,
+        "max_visits": 350
+      },
+      "recommended_range": {
+        "time_per_move_sec": [
+          2.0,
+          5.0
+        ],
+        "max_visits": [
+          150,
+          500
+        ]
+      }
+    }
+  },
+  "deployment_notes": [
+    "Use KataGo only for hard/expert modes on this host.",
+    "19x19 expert mode is CPU-heavy and may take several seconds per move.",
+    "Keep basic AI as fallback when KataGo is unavailable or times out."
+  ]
+}
