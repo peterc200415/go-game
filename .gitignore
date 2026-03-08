@@ -2,3 +2,7 @@ node_modules/
 *.db
 .env
 dist/
+katago/model.bin
+katago/*.zip
+katago/logs/
+katago/engine-avx2-backup-*/
