@@ -353,10 +353,10 @@ const password = ref('');
 const nickname = ref('');
 const roomIdInput = ref('');
 const selectedSize = ref(19);
-const selectedModel = ref('phi4-mini:3.8b');
+const selectedModel = ref('katago-hard');
 const showAIAISelector = ref(false);
-const aiModelBlack = ref('phi4-mini:3.8b');
-const aiModelWhite = ref('llama3.1:8b');
+const aiModelBlack = ref('katago-expert');
+const aiModelWhite = ref('katago-hard');
 const isAIAI = ref(false);
 
 const board = ref([]);
@@ -629,6 +629,15 @@ async function makeAIMove() {
         turn.value = turn.value === 'black' ? 'white' : 'black';
         moveCount.value++;
         consecutivePasses.value = 0;
+      } else {
+        // AI can't place — gracefully pass instead of looping infinitely
+        consecutivePasses.value++;
+        turn.value = turn.value === 'black' ? 'white' : 'black';
+        moveCount.value++;
+        if (consecutivePasses.value >= 2) {
+          endGameByScore();
+          return;
+        }
       }
     }
     
@@ -746,6 +755,12 @@ function pass() {
         turn.value = myColor.value;
         moveCount.value++;
         consecutivePasses.value = 0;
+      } else {
+        // AI can't place — gracefully pass instead of getting stuck
+        consecutivePasses.value++;
+        turn.value = myColor.value;
+        moveCount.value++;
+        if (consecutivePasses.value >= 2) endGameByScore();
       }
     }, 200);
   }

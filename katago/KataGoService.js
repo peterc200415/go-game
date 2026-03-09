@@ -93,6 +93,18 @@ class KataGoService {
 
             proc.on('spawn', () => {
                 setTimeout(resolveIfHealthy, 1500);
+
+                // Ensure child process dies if parent dies
+                const exitHandler = () => {
+                    if (this.proc && !this.proc.killed) {
+                        try { this.proc.kill('SIGKILL'); } catch (e) { }
+                    }
+                };
+                process.on('exit', exitHandler);
+                process.on('SIGINT', exitHandler);
+                process.on('SIGTERM', exitHandler);
+                process.on('SIGHUP', exitHandler);
+                process.on('uncaughtException', exitHandler);
             });
 
             proc.on('error', (err) => {
@@ -262,7 +274,7 @@ class KataGoService {
             moves: [],
             maxVisits: preset.max_visits,
             includePolicy: true
-        }, Math.max(10000, Math.ceil(preset.time_per_move_sec * 1000) + 6000));
+        }, Math.max(45000, Math.ceil(preset.time_per_move_sec * 1000) + 10000));
 
         const top = response.moveInfos?.[0];
         if (!top || !top.move) {

@@ -7,8 +7,12 @@ const path = require('path');
 const db = require('./database');
 const KataGoService = require('./katago/KataGoService');
 
-process.on('uncaughtException', (err) => {
+process.on('uncaughtException', async (err) => {
     console.error('Uncaught Exception:', err);
+    console.log('Shutting down AI engine before restarting...');
+    try {
+        await kataGo.shutdown();
+    } catch (e) { }
     console.log('Restarting server in 3 seconds...');
     setTimeout(() => process.exit(1), 3000);
 });

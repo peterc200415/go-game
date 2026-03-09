@@ -10,17 +10,17 @@ const SEARCH_WIDTH = 10;
 const SEARCH_DEPTH = 2;
 
 export const AI_MODELS = [
+    { id: 'katago-hard', name: 'KataGo Hard', desc: 'CPU KataGo with lower time cap' },
+    { id: 'katago-expert', name: 'KataGo Expert', desc: 'CPU KataGo with stronger search' },
     { id: 'llama3.2:3b', name: 'Llama 3.2 3B', desc: 'Fast small LLM' },
     { id: 'llama3.1:8b', name: 'Llama 3.1 8B', desc: 'Balanced general model' },
     { id: 'mistral:7b', name: 'Mistral 7B', desc: 'Solid tactical play' },
     { id: 'qwen2.5:7b', name: 'Qwen 2.5 7B', desc: 'Good reasoning model' },
     { id: 'phi4-mini:3.8b', name: 'Phi-4 Mini', desc: 'Current default LLM' },
-    { id: 'katago-hard', name: 'KataGo Hard', desc: 'CPU KataGo with lower time cap' },
-    { id: 'katago-expert', name: 'KataGo Expert', desc: 'CPU KataGo with stronger search' },
     { id: 'basic', name: 'Basic AI', desc: 'Local heuristic engine, no LLM' }
 ];
 
-let selectedModel = 'phi4-mini:3.8b';
+let selectedModel = 'katago-hard';
 
 export function setAIModel(modelId) {
     selectedModel = modelId === 'basic' ? null : modelId;

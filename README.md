@@ -41,18 +41,18 @@ This project is a full-stack Go game platform built with Node.js, Socket.IO, Vue
 - Backend: Node.js, Express, Socket.IO, SQLite
 - Frontend: Vue 3, Vite
 - AI Engines:
+  - KataGo analysis engine (CPU) [Primary / Default]
   - Basic heuristic engine
   - Ollama chat models
-  - KataGo analysis engine (CPU)
 - Service management: `systemd --user`
 - Reverse proxy: Nginx Proxy Manager
 
 - 後端：Node.js、Express、Socket.IO、SQLite
 - 前端：Vue 3、Vite
 - AI 引擎：
+  - KataGo analysis engine（CPU 版）[預設主力]
   - 本地 heuristic 引擎
   - Ollama 對話模型
-  - KataGo analysis engine（CPU 版）
 - 服務管理：`systemd --user`
 - 反向代理：Nginx Proxy Manager
 
@@ -96,11 +96,11 @@ Uses `/api/ai_move` to proxy chat-based move selection through Ollama. The backe
 
 透過 `/api/ai_move` 轉送到 Ollama 做落子判斷，後端已加 timeout，避免長時間卡死。
 
-### 3. KataGo CPU AI
+### 3. KataGo CPU AI (Default Player) / (預設 AI)
 
-Uses `/api/katago/move` through a backend adapter that manages a persistent KataGo process. Recommended for stronger play on 9x9 and 13x13 boards.
+Uses `/api/katago/move` through a backend adapter that manages a persistent KataGo process. The system ensures robust process cleanup to prevent CPU leaks and uses extended timeouts (45s) to support deep AI vs AI thinking. Recommended for stronger play on 9x9 and 13x13 boards.
 
-透過 `/api/katago/move` 呼叫 backend 的 KataGo adapter，並由後端管理常駐 KataGo 行程，適合用在 9x9 與 13x13 的較強棋力模式。
+透過 `/api/katago/move` 呼叫 backend 的 KataGo adapter，由後端管理常駐 KataGo 行程，具備嚴謹的 Process 清理機制防止 CPU 資源洩漏，並支援 45 秒長考避免 Timeout，確保 AI 對戰 AI 也能順利運行。適合用在 9x9 與 13x13 的較強棋力模式。
 
 Current presets for this host:
 
@@ -243,15 +243,15 @@ The server validates moves instead of trusting the frontend. It currently enforc
 
 - Socket.IO heartbeat has been tuned to reduce random disconnects.
 - Backend includes timeout protection for Ollama requests.
-- KataGo runs in CPU-only mode on this host.
-- The first KataGo request after backend restart may be slower because the model must warm up.
-- Frontend falls back to Basic AI if KataGo fails or times out.
+- KataGo runs in CPU-only mode on this host as the default AI.
+- AI vs AI mode natively supports KataGo vs KataGo with robust fallback logic and expanded timeouts.
+- KataGo child processes are strictly tied to the Node.js lifecycle (preventing 100% CPU zombie leaks).
 
 - Socket.IO heartbeat 已調整，降低隨機斷線。
 - 後端已加入 Ollama timeout 保護。
-- 目前 KataGo 在此主機上是 CPU-only 模式。
-- backend 重啟後的第一次 KataGo 請求可能較慢，因為需要模型預熱。
-- 如果 KataGo timeout 或失敗，前端會 fallback 到 Basic AI。
+- 目前 KataGo 在此主機上是 CPU-only 模式，且為全域預設 AI。
+- AI 對戰 AI 模式現已完美支援 KataGo 互打，內建完善的讓步 (Pass) 邏輯與加長的運算寬容時間。
+- KataGo 子程序已與 Node.js 生命週期綁定，解決當機或重啟時殘留殭屍程序導致 CPU 100% 的問題。
 
 ## Known Limitations | 已知限制
 
