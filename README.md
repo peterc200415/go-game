@@ -239,6 +239,16 @@ The server validates moves instead of trusting the frontend. It currently enforc
 - 簡單 ko 禁止
 - spectator 不可注入落子
 
+## Performance & Scaling | 效能與擴展性
+
+- **Human vs Human Matches (真實玩家對戰):** Consumes almost 0% CPU. The server merely validates moves and forwards Socket.IO messages. Scaling to thousands of players requires virtually no CPU upgrades.
+- **AI Matches (AI 對戰):** AI searches (KataGo) will saturate the CPU. However, rather than spawning new AI instances per player, the backend shares a **single queued KataGo engine** that batches concurrent requests (`nnMaxBatchSize`). 
+- **Hardware Upgrade Path:** Do NOT upgrade the CPU to increase AI performance capability. KataGo is heavily optimized for neural network accelerators. If drastically faster AI response times are needed, switch to an OpenCL or CUDA backend by installing a dedicated GPU.
+
+- **真實玩家對戰：** 幾乎不耗 CPU。伺服器僅負責座標驗證與 Socket 推播，千人同時連線也毫無運算壓力。
+- **AI 對戰：** 雖然 AI (KataGo) 思考會吃滿 CPU，但後端全面採用了單一引擎的排隊佇列機制。將同時多人的請求交由這唯一的 KataGo 統一並發計算，不會因為玩家變多而開啟一堆 AI 導致主機崩潰。
+- **硬體升級建議：** 未來若要提升 AI 回應速度與伺服器承載量，**不需要花錢升級 CPU**。KataGo 是專為 GPU 最佳化的引擎，只要安裝任何一張獨立顯卡並開啟 OpenCL/CUDA 模式，即可產生數十倍的算力提升。
+
 ## Deployment Notes | 部署說明
 
 - Socket.IO heartbeat has been tuned to reduce random disconnects.

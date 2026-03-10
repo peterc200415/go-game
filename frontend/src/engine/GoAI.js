@@ -30,6 +30,15 @@ export function getSelectedModel() {
     return selectedModel;
 }
 
+let currentAborter = null;
+
+export function abortAI() {
+    if (currentAborter) {
+        currentAborter.abort();
+        currentAborter = null;
+    }
+}
+
 function getApiBase() {
     const isProxied = !window.location.port || window.location.port === '80' || window.location.port === '443';
     return isProxied ? '' : `http://${window.location.hostname}:3001`;
@@ -232,25 +241,36 @@ export function getBasicAIMove(board, color, koHash = null) {
 }
 
 async function getKataGoMove(board, color) {
+    if (currentAborter) currentAborter.abort();
+    currentAborter = new AbortController();
+
     const difficulty = selectedModel === 'katago-expert' ? 'expert' : 'hard';
-    const res = await fetch(`${getApiBase()}/api/katago/move`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-            board,
-            color,
-            boardSize: board.length,
-            difficulty
-        })
-    });
+    try {
+        const res = await fetch(`${getApiBase()}/api/katago/move`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                board,
+                color,
+                boardSize: board.length,
+                difficulty
+            }),
+            signal: currentAborter.signal
+        });
 
-    if (!res.ok) {
-        const data = await res.json().catch(() => ({}));
-        throw new Error(data.error || `KataGo request failed (${res.status})`);
+        if (!res.ok) {
+            const data = await res.json().catch(() => ({}));
+            throw new Error(data.error || `KataGo request failed (${res.status})`);
+        }
+
+        const data = await res.json();
+        return data.move ?? null;
+    } catch (err) {
+        if (err.name === 'AbortError') return null;
+        throw err;
+    } finally {
+        currentAborter = null;
     }
-
-    const data = await res.json();
-    return data.move ?? null;
 }
 
 export async function getAIMove(board, color, koHash = null) {
@@ -302,8 +322,9 @@ export async function getAIMove(board, color, koHash = null) {
 
         const prompt = `You are a strong Go (Weiqi) player. Choose the best move from the candidate list only.\n\nBoard (${size}x${size}, ${phase}):\n${boardStr}You are ${playerColor} (${playerSymbol}). Turn ${turnNumber}.\nCandidate legal moves: ${topMoves}\n\nPriorities:\n1. Save groups in atari or capture enemy groups in atari.\n2. Prefer moves that strengthen shape, gain liberties, or attack weak enemy groups.\n3. In opening, value corners and sides before small center moves.\n4. Avoid self-atari and pointless dame.\n\nSTRICT OUTPUT: only "row,col".`;
 
-        const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), 8000);
+        if (currentAborter) currentAborter.abort();
+        currentAborter = new AbortController();
+        const timeoutId = setTimeout(() => currentAborter.abort(), 8000);
 
         const res = await fetch(`${getApiBase()}/api/ai_move`, {
             method: 'POST',
@@ -318,7 +339,7 @@ export async function getAIMove(board, color, koHash = null) {
                     num_predict: 20
                 }
             }),
-            signal: controller.signal
+            signal: currentAborter.signal
         });
 
         clearTimeout(timeoutId);

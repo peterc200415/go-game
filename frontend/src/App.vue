@@ -222,7 +222,7 @@ import {
   createBoard, placeStone, boardHash,
   calculateScore, displayToColor, colorToDisplay
 } from './engine/GoLogic.js';
-import { getAIMove, AI_MODELS, setAIModel, getSelectedModel } from './engine/GoAI.js';
+import { getAIMove, AI_MODELS, setAIModel, getSelectedModel, abortAI } from './engine/GoAI.js';
 
 // ==================== i18n ====================
 const lang = ref('zh');
@@ -799,6 +799,9 @@ function endGameByScore() {
 function leave() {
   isSpectator.value = false;
   gameOver.value = false;
+  isAIAI.value = false;
+  isSinglePlayer.value = false;
+  abortAI();
   if (!isSinglePlayer.value && socket) {
     socket.emit('leave_room', currentRoomId.value);
   }
